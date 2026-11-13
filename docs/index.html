@@ -56,6 +56,25 @@ multi-git verify    # validate configuration</code></pre>
   </div>
 
   <div class="card">
+    <details>
+      <summary><strong>All install commands</strong></summary>
+      <p><strong>Linux / macOS / WSL (bash):</strong></p>
+      <pre><code>curl -fsSL https://guionardo.github.io/multi-git/install.sh | bash</code></pre>
+      <p><strong>Windows (PowerShell):</strong></p>
+      <pre><code>irm https://guionardo.github.io/multi-git/install.ps1 | iex</code></pre>
+      <p><strong>With arguments (example):</strong></p>
+      <pre><code>curl -fsSL https://guionardo.github.io/multi-git/install.sh | bash -s -- wizard --dry-run
+# PowerShell:
+$env:MULTI_GIT_ARGS="wizard --dry-run"; irm https://guionardo.github.io/multi-git/install.ps1 | iex</code></pre>
+      <p><strong>From source:</strong></p>
+      <pre><code>git clone https://github.com/guionardo/multi-git.git
+cd multi-git/cli
+go build -o multi-git .
+./multi-git wizard</code></pre>
+    </details>
+  </div>
+
+  <div class="card">
     <h2>Manual install (no script)</h2>
     <p>Download a binary from the <a href="https://github.com/guionardo/multi-git/releases">releases page</a>, or build from source:</p>
     <pre><code>git clone https://github.com/guionardo/multi-git.git
