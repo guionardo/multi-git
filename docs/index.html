@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>multi-git — multiple Git identities on one machine</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 880px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
+    h1 { margin-bottom: 0.25rem; }
+    .tag { color: #666; margin-top: 0; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 8px; overflow-x: auto; position: relative; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .cmd { display: flex; align-items: center; gap: .5rem; }
+    .cmd code { flex: 1; }
+    button { padding: .4rem .8rem; border: 1px solid #888; background: transparent; border-radius: 6px; cursor: pointer; }
+    .card { border: 1px solid #ccc; border-radius: 10px; padding: 1rem 1.25rem; margin: 1rem 0; }
+    .os-badge { display: inline-block; padding: .2rem .6rem; border-radius: 999px; background: #eee; font-size: .85rem; }
+    @media (prefers-color-scheme: dark) { .os-badge { background: #333; } }
+    footer { margin-top: 3rem; font-size: .85rem; color: #888; }
+  </style>
+</head>
+<body>
+  <h1>multi-git</h1>
+  <p class="tag">Configure multiple Git identities (personal and work) on one machine — with a cross-platform CLI.</p>
+
+  <div class="card">
+    <p>Detected system: <span id="os" class="os-badge">detecting…</span></p>
+    <p id="install-label">Install with one command:</p>
+    <div class="cmd">
+      <pre><code id="install-cmd">curl -fsSL https://guionardo.github.io/multi-git/install.sh | bash</code></pre>
+      <button onclick="copyCmd()">Copy</button>
+    </div>
+    <p style="font-size:.85rem;color:#888" id="install-hint"></p>
+  </div>
+
+  <div class="card">
+    <h2>What it does</h2>
+    <ul>
+      <li>Detects SSH keys, <code>gh</code>/<code>az</code> CLIs and existing Git config.</li>
+      <li>Generates <code>~/.gitconfig</code> with <code>includeIf</code> rules for <code>~/personal</code> and <code>~/work</code>.</li>
+      <li>Creates per-identity overrides and SSH config with <code>IdentitiesOnly yes</code>.</li>
+      <li>Builds <code>~/.ssh/allowed_signers</code> for SSH commit signing.</li>
+      <li>Backs up existing files (<code>.bak.&lt;timestamp&gt;</code>) and asks before overwriting.</li>
+      <li>Validates the result with <code>multi-git verify</code>.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Commands</h2>
+    <pre><code>multi-git detect    # show detected setup
+multi-git status    # show current config status
+multi-git wizard    # guided interactive setup (TUI)
+multi-git apply     # generate/update configuration
+multi-git verify    # validate configuration</code></pre>
+  </div>
+
+  <div class="card">
+    <h2>Manual install (no script)</h2>
+    <p>Download a binary from the <a href="https://github.com/guionardo/multi-git/releases">releases page</a>, or build from source:</p>
+    <pre><code>git clone https://github.com/guionardo/multi-git.git
+cd multi-git/cli
+go build -o multi-git .
+./multi-git wizard</code></pre>
+  </div>
+
+  <footer>
+    Source: <a href="https://github.com/guionardo/multi-git">github.com/guionardo/multi-git</a> ·
+    License: see repository.
+  </footer>
+
+  <script>
+    (function () {
+      const ua = navigator.userAgent.toLowerCase();
+      const platform = (navigator.platform || "").toLowerCase();
+      const isWin = ua.includes("windows") || platform.includes("win");
+      const isMac = ua.includes("mac") || platform.includes("mac");
+      const osEl = document.getElementById("os");
+      const cmdEl = document.getElementById("install-cmd");
+      const hintEl = document.getElementById("install-hint");
+      if (isWin) {
+        osEl.textContent = "Windows (PowerShell)";
+        cmdEl.textContent = "irm https://guionardo.github.io/multi-git/install.ps1 | iex";
+        hintEl.textContent = "Runs in PowerShell. Set $env:MULTI_GIT_ARGS=\"wizard --dry-run\" to pass arguments.";
+      } else if (isMac) {
+        osEl.textContent = "macOS (bash/zsh)";
+        cmdEl.textContent = "curl -fsSL https://guionardo.github.io/multi-git/install.sh | bash";
+        hintEl.textContent = "Works on macOS and Linux.";
+      } else {
+        osEl.textContent = "Linux (bash)";
+        cmdEl.textContent = "curl -fsSL https://guionardo.github.io/multi-git/install.sh | bash";
+        hintEl.textContent = "Works on Linux and WSL.";
+      }
+    })();
+    function copyCmd() {
+      const t = document.getElementById("install-cmd").textContent;
+      navigator.clipboard.writeText(t).then(() => {
+        const b = event.target; b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy", 1200);
+      });
+    }
+  </script>
+</body>
+</html>

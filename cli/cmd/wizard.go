@@ -20,6 +20,7 @@ import (
 )
 
 var skipSSHCheck bool
+var autoApply bool
 
 var wizardCmd = &cobra.Command{
 	Use:   "wizard",
@@ -29,6 +30,7 @@ var wizardCmd = &cobra.Command{
 
 func init() {
 	wizardCmd.Flags().BoolVar(&skipSSHCheck, "skip-ssh-check", false, "skip live SSH host connectivity checks")
+	wizardCmd.Flags().BoolVar(&autoApply, "auto-apply", false, "apply configuration automatically after validation")
 }
 
 type wizStep int
@@ -256,6 +258,11 @@ func (m wizardModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case checksDoneMsg:
 		m.checking = false
 		m.checks = msg.results
+		if autoApply {
+			m.step = stepApply
+			m.applying = true
+			return m, tea.Batch(m.spinner.Tick, doApplyCmd(m))
+		}
 		m.step = stepResults
 		return m, nil
 	case applyDoneMsg:
