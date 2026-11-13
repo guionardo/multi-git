@@ -1,0 +1,16 @@
+# multi_git — personal identity override
+# Loaded automatically for repositories under ~/personal/
+
+[user]
+    name = {{PERSONAL_NAME}}
+    email = {{PERSONAL_EMAIL}}
+    # SSH public key used as the signing key. Git resolves the private key
+    # through ssh-agent (or the matching IdentityFile in ~/.ssh/config).
+    signingkey = ~/.ssh/{{PERSONAL_SSH_KEY}}.pub
+
+[commit]
+    gpgsign = true
+
+# Uncomment to also sign tags:
+# [tag]
+#     gpgsign = true

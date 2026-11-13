@@ -1,0 +1,38 @@
+# multi_git — SSH client configuration template
+# Copy to:
+#   Linux / macOS / WSL : ~/.ssh/config
+#   Windows             : %USERPROFILE%\.ssh\config
+#
+# Permissions (Linux/macOS/WSL): chmod 600 ~/.ssh/config
+
+# --- Personal (GitHub) ---
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/{{PERSONAL_SSH_KEY}}
+    IdentitiesOnly yes
+    AddKeysToAgent yes
+
+# --- Corporate (Azure DevOps) ---
+Host vs-ssh.visualstudio.com
+    HostName vs-ssh.visualstudio.com
+    User git
+    IdentityFile ~/.ssh/{{CORPORATE_SSH_KEY}}
+    IdentitiesOnly yes
+    AddKeysToAgent yes
+
+Host ssh.dev.azure.com
+    HostName ssh.dev.azure.com
+    User git
+    IdentityFile ~/.ssh/{{CORPORATE_SSH_KEY}}
+    IdentitiesOnly yes
+    AddKeysToAgent yes
+
+# Optional: separate GitHub accounts on the same host using aliases.
+# Example:
+# Host github.com-personal
+#     HostName github.com
+#     User git
+#     IdentityFile ~/.ssh/id_ed25519
+#     IdentitiesOnly yes
+# Then use remote URL: git@github.com-personal:owner/repo.git

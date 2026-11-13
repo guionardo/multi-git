@@ -1,0 +1,10 @@
+# multi_git — allowed signers template
+# Copy to ~/.ssh/allowed_signers after replacing placeholders.
+# Each line: <email> <contents of the matching *.pub file>
+#
+# Example generation:
+#   printf '%s %s\n' "{{PERSONAL_EMAIL}}" "$(cat ~/.ssh/{{PERSONAL_SSH_KEY}}.pub)" >> ~/.ssh/allowed_signers
+#   printf '%s %s\n' "{{CORPORATE_EMAIL}}" "$(cat ~/.ssh/{{CORPORATE_SSH_KEY}}.pub)" >> ~/.ssh/allowed_signers
+
+{{PERSONAL_EMAIL}} {{PERSONAL_PUBLIC_KEY_LINE}}
+{{CORPORATE_EMAIL}} {{CORPORATE_PUBLIC_KEY_LINE}}

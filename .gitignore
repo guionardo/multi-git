@@ -1,0 +1,14 @@
+# Never commit real private keys or filled-in personal configs
+*.key
+id_rsa
+id_ed25519
+id_ecdsa
+*.pem
+.env
+# Local overrides
+.gitconfig.local
+allowed_signers.local
+
+# Personal/private data (never commit)
+private/
+local/

@@ -1,0 +1,57 @@
+# multi_git — global Git configuration template
+#
+# Copy this file to:
+#   Linux / macOS / WSL : ~/.gitconfig
+#   Windows (Git Bash)  : %USERPROFILE%\.gitconfig (use forward slashes in paths)
+#
+# Replace every {{...}} placeholder before use.
+# This file deliberately keeps NO secret material.
+
+[init]
+    defaultBranch = main
+
+[core]
+    # Uncomment and adjust per platform:
+    # Windows : autocrlf = true
+    # Linux/macOS/WSL : autocrlf = input
+    # autocrlf = input
+
+[pull]
+    rebase = false
+
+[fetch]
+    prune = true
+
+# Default identity used when no includeIf rule matches.
+# Recommended default: personal account.
+[user]
+    name = {{PERSONAL_NAME}}
+    email = {{PERSONAL_EMAIL}}
+
+# SSH-based commit/tag signing.
+[gpg]
+    format = ssh
+
+[gpg "ssh"]
+    # Created from your public keys (see ssh/allowed_signers template).
+    allowedSignersFile = ~/.ssh/allowed_signers
+
+# Folder-based identities (case-insensitive, works on Windows/macOS/Linux).
+# Rule: any repository whose .git directory is under ~/personal/ uses the
+# personal identity; under ~/work/ uses the corporate identity.
+[includeIf "gitdir/i:~/personal/"]
+    path = ~/.gitconfig-personal
+
+[includeIf "gitdir/i:~/work/"]
+    path = ~/.gitconfig-work
+
+# Optional URL-based fallback (uncomment and adjust to your remotes).
+# Useful when repositories are not separated by folder.
+# [includeIf "hasconfig:remote.*.url:https://github.com/**"]
+#     path = ~/.gitconfig-personal
+#
+# [includeIf "hasconfig:remote.*.url:https://dev.azure.com/**"]
+#     path = ~/.gitconfig-work
+#
+# [includeIf "hasconfig:remote.*.url:git@ssh.dev.azure.com:**"]
+#     path = ~/.gitconfig-work

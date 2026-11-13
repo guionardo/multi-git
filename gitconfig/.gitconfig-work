@@ -1,0 +1,14 @@
+# multi_git — corporate identity override
+# Loaded automatically for repositories under ~/work/
+
+[user]
+    name = {{CORPORATE_NAME}}
+    email = {{CORPORATE_EMAIL}}
+    signingkey = ~/.ssh/{{CORPORATE_SSH_KEY}}.pub
+
+[commit]
+    gpgsign = true
+
+# Uncomment to also sign tags:
+# [tag]
+#     gpgsign = true
