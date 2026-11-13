@@ -6,6 +6,8 @@ CLI multiplataforma (Go) para automatizar a configuração documentada na Fase 1
 
 ```bash
 multi-git detect   # mostra chaves SSH, CLIs (gh/az) e config existente
+multi-git status   # mostra o estado atual da configuração multi-git
+multi-git wizard   # assistente interativo (TUI) para configurar tudo
 multi-git apply    # fluxo interativo com backup e confirmação
 multi-git verify   # valida arquivos e identidade por pasta
 ```

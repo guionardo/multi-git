@@ -4,10 +4,17 @@ import (
 	"fmt"
 
 	"github.com/guionardo/multi-git/internal/detect"
+
+	"github.com/spf13/cobra"
 )
 
+var detectCmd = &cobra.Command{
+	Use:   "detect",
+	Short: "Show detected SSH keys, CLIs and existing Git config",
+	RunE:  func(cmd *cobra.Command, args []string) error { return runDetect(args) },
+}
+
 func runDetect(args []string) error {
-	parseFlags(args)
 	d := detect.Run()
 	fmt.Println("Home:", d.Home)
 	fmt.Println()

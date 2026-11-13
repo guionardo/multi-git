@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"bufio"
-	"flag"
 	"fmt"
-	"os"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 type GlobalFlags struct {
@@ -15,47 +15,34 @@ type GlobalFlags struct {
 
 var Flags GlobalFlags
 
-func Execute() error {
-	if len(os.Args) < 2 {
+var rootCmd = &cobra.Command{
+	Use:   "multi-git",
+	Short: "Configure multiple Git identities on one machine",
+	Long: `multi-git helps developers safely use different Git identities
+(personal and work) on a single machine using conditional includes,
+SSH keys, and signed commits.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
 		return runApply()
-	}
-	switch os.Args[1] {
-	case "detect":
-		return runDetect(os.Args[2:])
-	case "apply":
-		return runApplyArgs(os.Args[2:])
-	case "verify":
-		return runVerify(os.Args[2:])
-	case "help", "-h", "--help":
-		printHelp()
-		return nil
-	default:
-		return fmt.Errorf("unknown command %q (use: detect, apply, verify, help)", os.Args[1])
-	}
+	},
 }
 
-func parseFlags(args []string) {
-	fs := flag.NewFlagSet("multi-git", flag.ExitOnError)
-	fs.BoolVar(&Flags.DryRun, "dry-run", false, "show changes without writing files")
-	fs.BoolVar(&Flags.Yes, "yes", false, "answer yes to all confirmations")
-	fs.Parse(args)
+func Execute() error {
+	return rootCmd.Execute()
+}
+
+func init() {
+	rootCmd.PersistentFlags().BoolVar(&Flags.DryRun, "dry-run", false, "show changes without writing files")
+	rootCmd.PersistentFlags().BoolVar(&Flags.Yes, "yes", false, "do not prompt for confirmation")
+
+	rootCmd.AddCommand(detectCmd)
+	rootCmd.AddCommand(applyCmd)
+	rootCmd.AddCommand(verifyCmd)
+	rootCmd.AddCommand(wizardCmd)
+	rootCmd.AddCommand(statusCmd)
 }
 
 func printHelp() {
-	fmt.Println(`multi-git — configure multiple Git identities on one machine
-
-Usage:
-  multi-git [command] [flags]
-
-Commands:
-  detect   Show detected SSH keys, CLIs and existing Git config
-  apply    Interactively generate/update Git and SSH configuration
-  verify   Validate generated configuration
-  help     Show this help
-
-Flags:
-  --dry-run   Do not write files
-  --yes       Do not prompt for confirmation`)
+	fmt.Println(rootCmd.UsageString())
 }
 
 // ---- shared helpers ----

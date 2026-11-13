@@ -9,10 +9,17 @@ import (
 
 	"github.com/guionardo/multi-git/internal/config"
 	"github.com/guionardo/multi-git/internal/detect"
+
+	"github.com/spf13/cobra"
 )
 
+var applyCmd = &cobra.Command{
+	Use:   "apply",
+	Short: "Interactively generate/update Git and SSH configuration",
+	RunE:  func(cmd *cobra.Command, args []string) error { return runApply() },
+}
+
 func runApplyArgs(args []string) error {
-	parseFlags(args)
 	return runApply()
 }
 

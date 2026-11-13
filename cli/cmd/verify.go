@@ -8,10 +8,17 @@ import (
 	"strings"
 
 	"github.com/guionardo/multi-git/internal/paths"
+
+	"github.com/spf13/cobra"
 )
 
+var verifyCmd = &cobra.Command{
+	Use:   "verify",
+	Short: "Validate generated configuration",
+	RunE:  func(cmd *cobra.Command, args []string) error { return runVerify(args) },
+}
+
 func runVerify(args []string) error {
-	parseFlags(args)
 	home := paths.Home()
 	required := []string{
 		filepath.Join(home, ".gitconfig"),
