@@ -148,14 +148,6 @@ func splitKeyValue(line string) (string, string, bool) {
 	return strings.TrimSpace(line[:idx]), strings.TrimSpace(line[idx+1:]), true
 }
 
-func valueAfterEquals(s string) string {
-	idx := strings.Index(s, "=")
-	if idx < 0 {
-		return ""
-	}
-	return strings.TrimSpace(s[idx+1:])
-}
-
 func detectGH() *CLIInfo {
 	path, err := exec.LookPath("gh")
 	if err != nil {

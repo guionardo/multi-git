@@ -178,6 +178,18 @@ Adjust the patterns to match `git remote -v`.
 
 - **Wrong identity in a repository:** confirm the repository is under `~/personal/` or
   `~/work/` (real path, no unexpected symlink) and run `git config --show-origin`.
+- **Cloned with `gh` (GitHub CLI):** `gh repo clone` may write `user.name` and
+  `user.email` (and sometimes `user.signingkey` / `commit.gpgsign`) directly into the
+  repository's `.git/config`. Local config has higher precedence than the global
+  `includeIf` rules, so the folder-based override is silently ignored. Remove the
+  local overrides so `includeIf` can apply:
+  ```bash
+  git config --local --unset user.name
+  git config --local --unset user.email
+  git config --local --unset user.signingkey
+  git config --local --unset commit.gpgsign
+  ```
+  Then check with `git config --show-origin user.email`.
 - **`includeIf` does not apply on Windows:** use forward slashes `/` and the `~/`
   prefix; avoid `C:\...` in `gitdir`. Prefer `gitdir/i:` (case-insensitive).
 - **Commit not signed:** check `commit.gpgsign = true` in the override and that the
