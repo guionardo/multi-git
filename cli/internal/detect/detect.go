@@ -141,11 +141,11 @@ func parseGitIdentity(cfg string) GitIdentity {
 }
 
 func splitKeyValue(line string) (string, string, bool) {
-	idx := strings.Index(line, "=")
-	if idx < 0 {
+	before, after, ok := strings.Cut(line, "=")
+	if !ok {
 		return "", "", false
 	}
-	return strings.TrimSpace(line[:idx]), strings.TrimSpace(line[idx+1:]), true
+	return strings.TrimSpace(before), strings.TrimSpace(after), true
 }
 
 func detectGH() *CLIInfo {
