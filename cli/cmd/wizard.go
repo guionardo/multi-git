@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -18,10 +19,16 @@ import (
 	"github.com/guionardo/multi-git/internal/ssh"
 )
 
+var skipSSHCheck bool
+
 var wizardCmd = &cobra.Command{
 	Use:   "wizard",
 	Short: "Guided setup wizard (interactive)",
 	RunE:  func(cmd *cobra.Command, args []string) error { return runWizard() },
+}
+
+func init() {
+	wizardCmd.Flags().BoolVar(&skipSSHCheck, "skip-ssh-check", false, "skip live SSH host connectivity checks")
 }
 
 type wizStep int
@@ -309,18 +316,32 @@ func doChecksCmd(m wizardModel) tea.Cmd {
 		} else {
 			results = append(results, "✗ corporate key permissions: "+msg)
 		}
-		// host checks
-		ok, msg := ssh.HostCheck("github.com", personalPriv, 15*time.Second)
-		if ok {
-			results = append(results, "✓ github.com reachable/authenticated")
+		if skipSSHCheck {
+			results = append(results, "• SSH host checks skipped (--skip-ssh-check)")
 		} else {
-			results = append(results, "✗ github.com: "+truncate(msg, 80))
-		}
-		ok, msg = ssh.HostCheck("vs-ssh.visualstudio.com", corpPriv, 15*time.Second)
-		if ok {
-			results = append(results, "✓ vs-ssh.visualstudio.com reachable/authenticated")
-		} else {
-			results = append(results, "✗ vs-ssh.visualstudio.com: "+truncate(msg, 80))
+			// host checks (parallel)
+			type hostRes struct {
+				host string
+				ok   bool
+				msg  string
+			}
+			hostCh := make(chan hostRes, 2)
+			go func() {
+				ok, msg := ssh.HostCheck("github.com", personalPriv, 15*time.Second)
+				hostCh <- hostRes{"github.com", ok, msg}
+			}()
+			go func() {
+				ok, msg := ssh.HostCheck("vs-ssh.visualstudio.com", corpPriv, 15*time.Second)
+				hostCh <- hostRes{"vs-ssh.visualstudio.com", ok, msg}
+			}()
+			for i := 0; i < 2; i++ {
+				r := <-hostCh
+				if r.ok {
+					results = append(results, "✓ "+r.host+" reachable/authenticated")
+				} else {
+					results = append(results, "✗ "+r.host+": "+truncate(r.msg, 80))
+				}
+			}
 		}
 		return checksDoneMsg{results: results}
 	}
@@ -345,8 +366,25 @@ func doApplyCmd(m wizardModel) tea.Cmd {
 		written, err := config.Apply(data, home, Flags.DryRun, Flags.Yes, func(label string) bool {
 			return true
 		})
+		if err == nil && !Flags.DryRun {
+			tutorial := buildTutorial(data)
+			tutPath := filepath.Join(home, "multi-git-tutorial.md")
+			_ = os.WriteFile(tutPath, []byte(tutorial), 0644)
+			written = append(written, tutPath)
+		}
 		return applyDoneMsg{written: written, err: err}
 	}
+}
+
+func detectedKeyNames(keys []detect.SSHKey) string {
+	if len(keys) == 0 {
+		return "(none)"
+	}
+	names := make([]string, 0, len(keys))
+	for _, k := range keys {
+		names = append(names, k.Name)
+	}
+	return strings.Join(names, ", ")
 }
 
 func truncate(s string, n int) string {
@@ -370,6 +408,7 @@ func (m wizardModel) View() string {
 		b.WriteString("\nPress Enter to begin, q to quit.\n")
 	case stepPersonal:
 		b.WriteString("Personal identity (GitHub)\n\n")
+		b.WriteString("Detected keys: " + detectedKeyNames(m.detect.SSHKeys) + "\n\n")
 		labels := []string{"Name", "Email", "SSH key name"}
 		for i := 0; i < 3; i++ {
 			b.WriteString(labels[i] + ": " + m.inputs[i].View() + "\n")
@@ -377,6 +416,7 @@ func (m wizardModel) View() string {
 		b.WriteString("\nTab/Enter to move, Enter on last field to continue.\n")
 	case stepCorporate:
 		b.WriteString("Corporate identity (Azure DevOps)\n\n")
+		b.WriteString("Detected keys: " + detectedKeyNames(m.detect.SSHKeys) + "\n\n")
 		labels := []string{"Name", "Email", "SSH key name"}
 		for i := 0; i < 3; i++ {
 			b.WriteString(labels[i] + ": " + m.inputs[i+3].View() + "\n")
@@ -413,13 +453,26 @@ func (m wizardModel) View() string {
 	return b.String()
 }
 
-func tutorialText(m wizardModel) string {
+func buildTutorial(data config.Data) string {
 	var b strings.Builder
-	b.WriteString("1. Ensure your public keys are registered:\n")
-	b.WriteString("   - GitHub: Settings -> SSH and GPG keys -> add " + m.personalKey + ".pub\n")
-	b.WriteString("   - Azure DevOps: User settings -> SSH Public Keys -> add " + m.corporateKey + ".pub\n")
-	b.WriteString("2. Move repositories under ~/personal and ~/work.\n")
-	b.WriteString("3. Run 'multi-git verify' to validate.\n")
-	b.WriteString("4. Test SSH: ssh -T git@github.com ; ssh -T git@vs-ssh.visualstudio.com\n")
+	b.WriteString("# multi-git next steps\n\n")
+	b.WriteString("## Register public keys\n")
+	b.WriteString("- GitHub: Settings -> SSH and GPG keys -> New SSH key -> paste contents of ~/.ssh/" + data.PersonalKey + ".pub\n")
+	b.WriteString("- Azure DevOps: User settings -> SSH Public Keys -> Add -> paste contents of ~/.ssh/" + data.CorporateKey + ".pub\n\n")
+	b.WriteString("## Repository layout\n")
+	b.WriteString("- Move personal repositories under ~/personal/\n")
+	b.WriteString("- Move corporate repositories under ~/work/\n\n")
+	b.WriteString("## Verify\n")
+	b.WriteString("- Run: multi-git verify\n")
+	b.WriteString("- Test SSH: ssh -T git@github.com && ssh -T git@vs-ssh.visualstudio.com\n")
+	b.WriteString("- In a repo: git config --show-origin user.email\n")
 	return b.String()
+}
+
+func tutorialText(m wizardModel) string {
+	data := config.Data{
+		PersonalKey:  m.personalKey,
+		CorporateKey: m.corporateKey,
+	}
+	return buildTutorial(data)
 }
