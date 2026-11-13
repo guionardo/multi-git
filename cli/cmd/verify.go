@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -14,9 +13,6 @@ import (
 func runVerify(args []string) error {
 	parseFlags(args)
 	home := paths.Home()
-	reader := bufio.NewReader(os.Stdin)
-	_ = reader
-
 	required := []string{
 		filepath.Join(home, ".gitconfig"),
 		filepath.Join(home, ".gitconfig-personal"),
@@ -49,10 +45,19 @@ func runVerify(args []string) error {
 		{filepath.Join(home, "personal", ".multi-git-verify"), "personal"},
 		{filepath.Join(home, "work", ".multi-git-verify"), "corporate"},
 	} {
-		_ = os.MkdirAll(tc.dir, 0755)
-		cmd := exec.Command("git", "init", "-q")
-		cmd.Dir = tc.dir
-		_ = cmd.Run()
+		if err := os.MkdirAll(tc.dir, 0755); err != nil {
+			fmt.Printf("  %s: could not create dir: %v\n", tc.dir, err)
+			ok = false
+			continue
+		}
+		initCmd := exec.Command("git", "init", "-q")
+		initCmd.Dir = tc.dir
+		if err := initCmd.Run(); err != nil {
+			fmt.Printf("  %s: git init failed: %v\n", tc.dir, err)
+			ok = false
+			_ = os.RemoveAll(tc.dir)
+			continue
+		}
 		// query email
 		out, err := exec.Command("git", "-C", tc.dir, "config", "user.email").Output()
 		email := strings.TrimSpace(string(out))

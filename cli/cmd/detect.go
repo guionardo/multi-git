@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bufio"
 	"fmt"
 
 	"github.com/guionardo/multi-git/internal/detect"
@@ -49,6 +48,5 @@ func runDetect(args []string) error {
 	} else {
 		fmt.Println("az CLI: not found")
 	}
-	_ = bufio.NewReader
 	return nil
 }

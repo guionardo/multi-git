@@ -8,7 +8,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
+
+	"github.com/guionardo/multi-git/internal/paths"
 )
 
 type SSHKey struct {
@@ -46,7 +47,7 @@ type Result struct {
 }
 
 func Run() Result {
-	r := Result{Home: pathsHome()}
+	r := Result{Home: paths.Home()}
 	r.SSHKeys = detectSSHKeys(r.Home)
 	r.GitConfig = readGitConfig(r.Home)
 	r.GitIdentity = parseGitIdentity(r.GitConfig)
@@ -55,12 +56,6 @@ func Run() Result {
 	r.GHLogin, r.GHEmail = detectGHUser()
 	r.AZLogin, r.AZEmail = detectAZUser()
 	return r
-}
-
-// pathsHome avoids import cycle
-func pathsHome() string {
-	h, _ := os.UserHomeDir()
-	return h
 }
 
 func detectSSHKeys(home string) []SSHKey {
@@ -118,19 +113,39 @@ func readGitConfig(home string) string {
 
 func parseGitIdentity(cfg string) GitIdentity {
 	id := GitIdentity{}
-	for _, line := range strings.Split(cfg, "\n") {
-		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "name") {
-			// crude: name = value
+	section := ""
+	for _, raw := range strings.Split(cfg, "\n") {
+		line := strings.TrimSpace(raw)
+		if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, ";") {
+			continue
 		}
-		if strings.HasPrefix(line, "name =") || strings.HasPrefix(line, "name=") {
-			id.Name = valueAfterEquals(line)
+		if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
+			section = strings.ToLower(strings.TrimSpace(line[1 : len(line)-1]))
+			continue
 		}
-		if strings.HasPrefix(line, "email =") || strings.HasPrefix(line, "email=") {
-			id.Email = valueAfterEquals(line)
+		if section != "user" {
+			continue
+		}
+		key, val, ok := splitKeyValue(line)
+		if !ok {
+			continue
+		}
+		switch strings.ToLower(key) {
+		case "name":
+			id.Name = val
+		case "email":
+			id.Email = val
 		}
 	}
 	return id
+}
+
+func splitKeyValue(line string) (string, string, bool) {
+	idx := strings.Index(line, "=")
+	if idx < 0 {
+		return "", "", false
+	}
+	return strings.TrimSpace(line[:idx]), strings.TrimSpace(line[idx+1:]), true
 }
 
 func valueAfterEquals(s string) string {
@@ -183,6 +198,5 @@ func detectAZ() *CLIInfo {
 	} else {
 		info.Detail = "not logged in"
 	}
-	_ = time.Second
 	return info
 }

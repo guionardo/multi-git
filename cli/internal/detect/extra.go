@@ -21,7 +21,7 @@ func detectGHUser() (string, string) {
 }
 
 func detectAZUser() (string, string) {
-	out, err := os_exec("az", "account", "show", "-o", "json")
+	out, err := exec.Command("az", "account", "show", "-o", "json").Output()
 	if err != nil {
 		return "", ""
 	}
@@ -29,7 +29,10 @@ func detectAZUser() (string, string) {
 	if json.Unmarshal(out, &m) != nil {
 		return "", ""
 	}
-	user, _ := m["user"].(map[string]any)
+	user, ok := m["user"].(map[string]any)
+	if !ok || user == nil {
+		return "", ""
+	}
 	name, _ := user["name"].(string)
 	login := name
 	email := ""
@@ -37,8 +40,4 @@ func detectAZUser() (string, string) {
 		email = name
 	}
 	return login, email
-}
-
-func os_exec(name string, args ...string) ([]byte, error) {
-	return exec.Command(name, args...).Output()
 }

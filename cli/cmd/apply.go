@@ -96,7 +96,9 @@ func runApply() error {
 		if _, err := os.Stat(dir); err != nil {
 			if confirm(reader, "Create directory "+dir+"?") {
 				if !Flags.DryRun {
-					_ = os.MkdirAll(dir, 0755)
+					if err := os.MkdirAll(dir, 0755); err != nil {
+						return fmt.Errorf("create dir %s: %w", dir, err)
+					}
 				}
 				fmt.Println("ensure dir:", dir)
 			}

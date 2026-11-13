@@ -70,14 +70,14 @@ func Apply(data Data, home string, dryRun, yes bool, confirm func(string) bool) 
 			}
 			bp, err := backup.Backup(spec.Target)
 			if err != nil {
-				return written, err
+				return written, fmt.Errorf("backup %s: %w", spec.Target, err)
 			}
 			if bp != "" {
 				fmt.Println("backup:", bp)
 			}
 		} else {
 			if err := os.MkdirAll(filepath.Dir(spec.Target), 0755); err != nil {
-				return written, err
+				return written, fmt.Errorf("create dir for %s: %w", spec.Target, err)
 			}
 		}
 		if dryRun {
@@ -93,19 +93,32 @@ func Apply(data Data, home string, dryRun, yes bool, confirm func(string) bool) 
 	}
 	// allowed_signers
 	as := filepath.Join(home, ".ssh", "allowed_signers")
-	linePersonal := fmt.Sprintf("%s %s\n", data.PersonalEmail, readPubKey(filepath.Join(home, ".ssh", data.PersonalKey+".pub")))
-	lineCorp := fmt.Sprintf("%s %s\n", data.CorporateEmail, readPubKey(filepath.Join(home, ".ssh", data.CorporateKey+".pub")))
+	personalPub := readPubKey(filepath.Join(home, ".ssh", data.PersonalKey+".pub"))
+	corporatePub := readPubKey(filepath.Join(home, ".ssh", data.CorporateKey+".pub"))
+	if personalPub == "" {
+		return written, fmt.Errorf("personal public key not found: %s", data.PersonalKey+".pub")
+	}
+	if corporatePub == "" {
+		return written, fmt.Errorf("corporate public key not found: %s", data.CorporateKey+".pub")
+	}
+	linePersonal := fmt.Sprintf("%s %s\n", data.PersonalEmail, personalPub)
+	lineCorp := fmt.Sprintf("%s %s\n", data.CorporateEmail, corporatePub)
 	content := linePersonal + lineCorp
 	if backup.Exists(as) {
 		if !yes && !confirm("Overwrite "+as+"?") {
 			fmt.Println("skipped:", as)
 		} else {
-			bp, _ := backup.Backup(as)
+			bp, err := backup.Backup(as)
+			if err != nil {
+				return written, fmt.Errorf("backup %s: %w", as, err)
+			}
 			if bp != "" {
 				fmt.Println("backup:", bp)
 			}
 			if !dryRun {
-				_ = os.WriteFile(as, []byte(content), 0600)
+				if err := os.WriteFile(as, []byte(content), 0600); err != nil {
+					return written, fmt.Errorf("write %s: %w", as, err)
+				}
 				fmt.Println("written:", as)
 				written = append(written, as)
 			} else {
@@ -115,8 +128,12 @@ func Apply(data Data, home string, dryRun, yes bool, confirm func(string) bool) 
 		}
 	} else {
 		if !dryRun {
-			_ = os.MkdirAll(filepath.Dir(as), 0755)
-			_ = os.WriteFile(as, []byte(content), 0600)
+			if err := os.MkdirAll(filepath.Dir(as), 0755); err != nil {
+				return written, fmt.Errorf("create dir for %s: %w", as, err)
+			}
+			if err := os.WriteFile(as, []byte(content), 0600); err != nil {
+				return written, fmt.Errorf("write %s: %w", as, err)
+			}
 			fmt.Println("written:", as)
 			written = append(written, as)
 		} else {
